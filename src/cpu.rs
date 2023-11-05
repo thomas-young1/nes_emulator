@@ -686,7 +686,37 @@ impl CPU {
                 /* TYA */
                 0x98 => self.tya(),
 
+                /* *AAC */
+                0x0b | 0x2b => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let data = self.mem_read(addr);
+                    self.register_a &= data;
+                    self.update_zero_and_neg_flags(self.register_a);
+                    self.status
+                        .set(CpuFlags::CARRY, self.status.contains(CpuFlags::NEGATIVE))
+                }
+
+                /* *AAX */
+                0x87 | 0x97 | 0x83 | 0xbf => {
+                    let data = self.register_a & self.register_x;
+                    let addr = self.get_operand_address(&opcode.mode);
+                    self.mem_write(addr, data);
+                }
+
+                /* *ARR */
+                0x6b => {
+                    let addr = self.get_operand_address(&opcode.mode);
+                    let data = self.mem_read(addr);
+                    self.register_a &= data;
+                    self.update_zero_and_neg_flags(self.register_a);
+                    self.status
+                        .set(CpuFlags::CARRY, self.status.contains(CpuFlags::NEGATIVE));
+
+                    // TODO
+                }
+
                 0x00 => return,
+
                 _ => todo!(),
             }
 

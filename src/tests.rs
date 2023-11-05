@@ -1,82 +1,45 @@
 #[allow(unused_imports)]
 use crate::*;
 
-#[cfg(test)]
-// TODO: clean up test cases and create more for additional assembly functions
-/*
-#[test]
-fn test_lda_immediate_load() {
-    let mut cpu = CPU::new(Bus::new(Rom::new(&vec![0xa9, 0x05, 0x00]).unwrap()));
-    cpu.run_with_callback(|_| {});
-
-    assert_eq!(cpu.status.bits() & 0b0000_0010, 0b00);
-    assert_eq!(cpu.status.bits() & 0b1000_0000, 0);
+struct TestRom {
+    header: Vec<u8>,
+    trainer: Option<Vec<u8>>,
+    pgp_rom: Vec<u8>,
+    chr_rom: Vec<u8>,
 }
 
-#[test]
-fn test_lda_immediate_zero_flag() {
-    let mut cpu = CPU::new();
-    cpu.load_and_run(vec![0xa9, 0x00, 0x00]);
+fn create_rom(rom: TestRom) -> Vec<u8> {
+    let mut result = Vec::with_capacity(
+        rom.header.len()
+            + rom.trainer.as_ref().map_or(0, |t| t.len())
+            + rom.pgp_rom.len()
+            + rom.chr_rom.len(),
+    );
 
-    assert_eq!(cpu.status.bits() & 0b0000_0010, 0b10);
+    result.extend(&rom.header);
+    if let Some(t) = rom.trainer {
+        result.extend(t);
+    }
+    result.extend(&rom.pgp_rom);
+    result.extend(&rom.chr_rom);
+
+    result
 }
 
-#[test]
-fn test_lda_from_mem() {
-    let mut cpu = CPU::new();
-    cpu.mem_write(0x10, 0x55);
-
-    cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
-
-    assert_eq!(cpu.register_a, 0x55)
-}
-
-#[test]
-fn test_tax_move_a_to_x() {
-    let mut cpu = CPU::new();
-    cpu.register_a = 10;
-    cpu.load_and_run(vec![0xa9, 0x0a, 0xaa, 0x00]);
-
-    assert_eq!(cpu.register_x, 10);
-}
-
-#[test]
-fn test_5_ops_together() {
-    let mut cpu = CPU::new();
-    cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
-
-    assert_eq!(cpu.register_x, 0xc1);
-}
-
-#[test]
-fn test_inx_overflow() {
-    let mut cpu = CPU::new();
-    cpu.load_and_run(vec![0xa9, 0xff, 0xaa, 0xe8, 0xe8, 0x00]);
-
-    assert_eq!(cpu.register_x, 1);
-}
-
-#[test]
-fn test_sta() {
-    let mut cpu = CPU::new();
-    cpu.load_and_run(vec![0xa9, 0x01, 0x85, 0x10, 0x00]);
-
-    assert_eq!(cpu.mem_read(0x10), 0x01);
-}
-
-#[test]
-fn test_sta_x() {
-    let mut cpu = CPU::new();
-    cpu.load_and_run(vec![0xe8, 0xa9, 0x01, 0x95, 0x10, 0x00]);
-
-    assert_eq!(cpu.mem_read(0x11), 0x01);
-}
-
-*/
 fn test_rom() -> Rom {
-    todo!("configure a proper default rom to use in test cases");
+    let test_rom = create_rom(TestRom {
+        header: vec![
+            0x4E, 0x45, 0x53, 0x1A, 0x02, 0x01, 0x31, 00, 00, 00, 00, 00, 00, 00, 00, 00,
+        ],
+        trainer: None,
+        pgp_rom: vec![1; 2 * crate::catridge::PRG_ROM_PAGE_SIZE],
+        chr_rom: vec![2; 1 * crate::catridge::CHR_ROM_PAGE_SIZE],
+    });
+
+    Rom::new(&test_rom).unwrap()
 }
 
+#[cfg(test)]
 #[test]
 fn test_format_trace() {
     let mut bus = Bus::new(test_rom());

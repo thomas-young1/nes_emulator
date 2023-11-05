@@ -93,6 +93,52 @@ impl CPU {
         }
     }
 
+    pub fn get_absolute_address(&self, mode: &AddressingMode, addr: u16) -> u16 {
+        match mode {
+            AddressingMode::ZeroPage => self.mem_read(addr) as u16,
+            AddressingMode::Absolute => self.mem_read_u16(addr),
+            AddressingMode::ZeroPage_X => {
+                let pos = self.mem_read(addr);
+                let addr = pos.wrapping_add(self.register_x) as u16;
+                addr
+            }
+            AddressingMode::ZeroPage_Y => {
+                let pos = self.mem_read(addr);
+                let addr = pos.wrapping_add(self.register_y) as u16;
+                addr
+            }
+            AddressingMode::Absolute_X => {
+                let pos = self.mem_read_u16(addr);
+                let addr = pos.wrapping_add(self.register_x as u16) as u16;
+                addr
+            }
+            AddressingMode::Absolute_Y => {
+                let pos = self.mem_read_u16(addr);
+                let addr = pos.wrapping_add(self.register_y as u16) as u16;
+                addr
+            }
+            AddressingMode::Indirect_X => {
+                let base = self.mem_read(addr);
+
+                let ptr = base.wrapping_add(self.register_x) as u16;
+                let lo = self.mem_read(ptr);
+                let hi = self.mem_read(ptr.wrapping_add(1));
+                (hi as u16) << 8 | (lo as u16)
+            }
+            AddressingMode::Indirect_Y => {
+                let base = self.mem_read(addr) as u16;
+
+                let lo = self.mem_read(base);
+                let hi = self.mem_read(base.wrapping_add(1));
+                let deref_base = (hi as u16) << 8 | (lo as u16);
+                deref_base.wrapping_add(self.register_y as u16)
+            }
+            _ => {
+                panic!("mode {:?} not supported", mode)
+            }
+        }
+    }
+
     fn add_to_register_a(&mut self, data: u8) {
         let sum = self.register_a as u16
             + data as u16
